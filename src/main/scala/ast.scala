@@ -1,3 +1,5 @@
+package com.github.stephentu.scalasqlparser
+
 trait Node extends PrettyPrinters {
   val ctx: Context
 
@@ -7,12 +9,14 @@ trait Node extends PrettyPrinters {
   def sql: String
 }
 
+sealed trait Stmt extends Node
+
 case class SelectStmt(projections: Seq[SqlProj],
                       relations: Option[Seq[SqlRelation]],
                       filter: Option[SqlExpr],
                       groupBy: Option[SqlGroupBy],
                       orderBy: Option[SqlOrderBy],
-                      limit: Option[Int], ctx: Context = null) extends Node {
+                      limit: Option[Int], ctx: Context = null) extends Stmt {
   def copyWithContext(c: Context) = copy(ctx = c)
   def sql =
     Seq(Some("select"),
@@ -22,6 +26,27 @@ case class SelectStmt(projections: Seq[SqlProj],
         groupBy.map(_.sql),
         orderBy.map(_.sql),
         limit.map(x => "limit " + x.toString)).flatten.mkString(" ")
+}
+
+case class UpdateStmt(relation: SqlRelation,
+                      sets: Seq[SetExpr],
+                      filter: Option[SqlExpr],
+                      ctx: Context = null) extends Stmt {
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def sql =
+    Seq("update",
+      "from " + relation.sql,
+      filter.map(x => "where " + x.sql).getOrElse(""),
+      sets.map(_.sql).mkString(", ")).flatten.mkString(" ")
+}
+
+case class SetExpr(lhs: FieldIdent, rhs: SqlExpr, ctx: Context = null) extends Node {
+  val opStr = "="
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def copyWithChildren(lhs: FieldIdent, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
+
+  // emit sql repr of node
+  def sql: String = lhs.sql + " = " + rhs.sql
 }
 
 trait SqlProj extends Node

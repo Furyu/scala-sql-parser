@@ -1,3 +1,5 @@
+package com.github.stephentu.scalasqlparser
+
 import scala.util.matching.Regex
 
 import scala.util.parsing.combinator._
@@ -54,7 +56,8 @@ class SQLParser extends StandardTokenParsers {
     "join", "asc", "desc", "from", "on", "not", "having", "distinct",
     "case", "when", "then", "else", "end", "for", "from", "exists", "between", "like", "in",
     "year", "month", "day", "null", "is", "date", "interval", "group", "order",
-    "date", "left", "right", "outer", "inner"
+    "date", "left", "right", "outer", "inner",
+    "update", "set"
   )
 
   lexical.reserved ++= functions
@@ -69,6 +72,22 @@ class SQLParser extends StandardTokenParsers {
       opt(groupBy) ~ opt(orderBy) ~ opt(limit) <~ opt(";") ^^ {
     case p ~ r ~ f ~ g ~ o ~ l => SelectStmt(p, r, f, g, o, l)
   }
+
+  def field: Parser[FieldIdent] = ident ~ opt( "." ~> ident ) ^^ {
+    case id ~ None => FieldIdent(None, id)
+    case a ~ Some( b: String ) => FieldIdent(Some(a), b)
+  }
+
+  def set_expr: Parser[SetExpr] = field ~ ("=" ~> expr) ^^ {
+    case a ~ b => SetExpr(a, b)
+  }
+
+  def update: Parser[UpdateStmt] =
+    "update" ~> relation ~ ("set" ~> sets) ~ opt(filter) <~ opt(";") ^^ {
+      case r ~ e ~ f => UpdateStmt(r, e, f)
+    }
+
+  def sets: Parser[Seq[SetExpr]] = repsep(set_expr, ",")
 
   def projections: Parser[Seq[SqlProj]] = repsep(projection, ",")
 
@@ -214,8 +233,8 @@ class SQLParser extends StandardTokenParsers {
 
   private def stripQuotes(s:String) = s.substring(1, s.length-1)
 
-  def parse(sql:String): Option[SelectStmt] = {
-    phrase(select)(new lexical.Scanner(sql)) match {
+  def parse(sql:String): Option[Stmt] = {
+    phrase(select | update)(new lexical.Scanner(sql)) match {
       case Success(r, q) => Option(r)
       case x => println(x); None
     }

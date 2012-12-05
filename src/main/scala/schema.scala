@@ -1,3 +1,5 @@
+package com.github.stephentu.scalasqlparser
+
 import java.sql._
 import java.util.Properties
 

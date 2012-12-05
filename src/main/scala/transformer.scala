@@ -1,3 +1,5 @@
+package com.github.stephentu.scalasqlparser
+
 trait Transformers {
 
   def topDownTransformation(n: Node)(f: Node => (Option[Node], Boolean)): Node =

@@ -1,3 +1,5 @@
+package com.github.stephentu.scalasqlparser
+
 trait Traversals {
 
   def wrapReturnTrue[A](f: Node => A): Node => Boolean = (n: Node) => { f(n); true }

@@ -1,3 +1,5 @@
+package com.github.stephentu.scalasqlparser
+
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 abstract trait Symbol {
