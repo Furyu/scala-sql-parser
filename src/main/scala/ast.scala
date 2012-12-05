@@ -29,7 +29,7 @@ case class SelectStmt(projections: Seq[SqlProj],
 }
 
 case class UpdateStmt(relation: SqlRelation,
-                      sets: Seq[SetExpr],
+                      sets: Seq[Assign],
                       filter: Option[SqlExpr],
                       ctx: Context = null) extends Stmt {
   def copyWithContext(c: Context) = copy(ctx = c)
@@ -40,14 +40,34 @@ case class UpdateStmt(relation: SqlRelation,
       sets.map(_.sql).mkString(", ")).flatten.mkString(" ")
 }
 
-case class SetExpr(lhs: FieldIdent, rhs: SqlExpr, ctx: Context = null) extends Node {
+case class InsertStmt(tableName: String, insRow: InsRow, ctx: Context = null) extends Stmt {
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+  def sql: String =
+    Seq("insert",
+      "into " + tableName,
+      insRow.sql).mkString(" ")
+}
+
+case class Assign(lhs: FieldIdent, rhs: SqlExpr, ctx: Context = null) extends Node {
   val opStr = "="
   def copyWithContext(c: Context) = copy(ctx = c)
   def copyWithChildren(lhs: FieldIdent, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
-
-  // emit sql repr of node
   def sql: String = lhs.sql + " = " + rhs.sql
 }
+
+sealed trait InsRow extends Node
+
+case class Set(sets: Seq[Assign], ctx: Context = null) extends Node with InsRow {
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+  def sql: String = sets.map(_.sql).mkString(", ")
+}
+
+case class Values(values: Seq[SqlExpr], ctx: Context = null) extends Node with InsRow {
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+  def sql: String = "values (" + values.map(_.sql) + ")"
+}
+
+trait AddExpr extends Binop
 
 trait SqlProj extends Node
 case class ExprProj(expr: SqlExpr, alias: Option[String], ctx: Context = null) extends SqlProj {
@@ -145,12 +165,12 @@ case class Like(lhs: SqlExpr, rhs: SqlExpr, negate: Boolean, ctx: Context = null
   def copyWithChildren(lhs: SqlExpr, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
 }
 
-case class Plus(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Binop {
+case class Plus(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Binop with AddExpr {
   val opStr = "+"
   def copyWithContext(c: Context) = copy(ctx = c)
   def copyWithChildren(lhs: SqlExpr, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
 }
-case class Minus(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Binop {
+case class Minus(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Binop with AddExpr {
   val opStr = "-"
   def copyWithContext(c: Context) = copy(ctx = c)
   def copyWithChildren(lhs: SqlExpr, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)

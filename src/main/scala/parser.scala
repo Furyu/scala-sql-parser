@@ -57,7 +57,8 @@ class SQLParser extends StandardTokenParsers {
     "case", "when", "then", "else", "end", "for", "from", "exists", "between", "like", "in",
     "year", "month", "day", "null", "is", "date", "interval", "group", "order",
     "date", "left", "right", "outer", "inner",
-    "update", "set"
+    "update", "set",
+    "insert", "into", "values"
   )
 
   lexical.reserved ++= functions
@@ -78,16 +79,28 @@ class SQLParser extends StandardTokenParsers {
     case a ~ Some( b: String ) => FieldIdent(Some(a), b)
   }
 
-  def set_expr: Parser[SetExpr] = field ~ ("=" ~> expr) ^^ {
-    case a ~ b => SetExpr(a, b)
+  def assign: Parser[Assign] = field ~ ("=" ~> expr) ^^ {
+    case a ~ b => Assign(a, b)
   }
 
+  def set: Parser[Seq[Assign]] = "set" ~> repsep(assign, ",")
+
   def update: Parser[UpdateStmt] =
-    "update" ~> relation ~ ("set" ~> sets) ~ opt(filter) <~ opt(";") ^^ {
+    "update" ~> relation ~ set ~ opt(filter) <~ opt(";") ^^ {
       case r ~ e ~ f => UpdateStmt(r, e, f)
     }
 
-  def sets: Parser[Seq[SetExpr]] = repsep(set_expr, ",")
+  def ins_row: Parser[InsRow] =
+    (
+      "values" ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs) }
+    ) | (
+      set ^^ { case assigns => Set(assigns) }
+    )
+
+  def insert: Parser[InsertStmt] =
+    "insert" ~> "into" ~> ident ~ ins_row <~ opt(";") ^^ {
+      case i ~ r => InsertStmt(i, r)
+    }
 
   def projections: Parser[Seq[SqlProj]] = repsep(projection, ",")
 
@@ -234,7 +247,7 @@ class SQLParser extends StandardTokenParsers {
   private def stripQuotes(s:String) = s.substring(1, s.length-1)
 
   def parse(sql:String): Option[Stmt] = {
-    phrase(select | update)(new lexical.Scanner(sql)) match {
+    phrase(select | insert | update)(new lexical.Scanner(sql)) match {
       case Success(r, q) => Option(r)
       case x => println(x); None
     }
