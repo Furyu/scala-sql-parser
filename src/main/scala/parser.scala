@@ -17,6 +17,7 @@ class SQLParser extends StandardTokenParsers {
     }
     override def token: Parser[Token] =
       ( identChar ~ rep( identChar | digit )              ^^ { case first ~ rest => processIdent(first :: rest mkString "") }
+      | '`' ~> ( identChar | digit ) ~ rep( identChar | digit ) <~ '`' ^^ { case first ~ rest => Identifier(first :: rest mkString "") }
       | rep1(digit) ~ opt('.' ~> rep(digit))              ^^ {
         case i ~ None    => NumericLit(i mkString "")
         case i ~ Some(d) => FloatLit(i.mkString("") + "." + d.mkString(""))
@@ -24,6 +25,7 @@ class SQLParser extends StandardTokenParsers {
       | '\'' ~ rep( chrExcept('\'', '\n', EofCh) ) ~ '\'' ^^ { case '\'' ~ chars ~ '\'' => StringLit(chars mkString "") }
       | '\"' ~ rep( chrExcept('\"', '\n', EofCh) ) ~ '\"' ^^ { case '\"' ~ chars ~ '\"' => StringLit(chars mkString "") }
       | EofCh                                             ^^^ EOF
+      | '`' ~> failure("Unmatched backquotes")
       | '\'' ~> failure("unclosed string literal")
       | '\"' ~> failure("unclosed string literal")
       | delim
