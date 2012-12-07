@@ -65,7 +65,7 @@ class SQLParser extends StandardTokenParsers {
 
   val functions = Seq("count", "sum", "avg", "min", "max", "substring", "extract")
 
-  lexical.reserved += (
+  val keywords = Seq(
     "select", "as", "or", "and", "group", "order", "by", "where", "limit",
     "join", "asc", "desc", "from", "on", "not", "having", "distinct",
     "case", "when", "then", "else", "end", "for", "from", "exists", "between", "like", "in",
@@ -75,7 +75,8 @@ class SQLParser extends StandardTokenParsers {
     "insert", "into", "values"
   )
 
-  lexical.reserved ++= functions
+  // TODO Make reserved words case-insensitive e.g. 'as', 'As', 'aS', 'AS' are reserved words.
+  lexical.reserved ++= keywords ++ keywords.map(_.toUpperCase) ++ functions ++ functions.map(_.toUpperCase)
 
   lexical.delimiters += (
     "*", "+", "-", "<", "=", "<>", "!=", "<=", ">=", ">", "/", "(", ")", ",", ".", ";"
