@@ -16,7 +16,7 @@ class SQLParser extends StandardTokenParsers {
      * Parse a cAsE-iNsEnSiTiVe string and normalize the result to s lower-case string
      * @return a lower-case string
      */
-    def ignoreCase = elem("case insensitive word", {
+    def ignoreCase = elem("keyword '" + str + "'", {
       elem => ("""(?i)\Q""" + str + """\E""").r.findFirstIn(elem.chars).isDefined
     }).map(_.chars.toLowerCase)
   }
