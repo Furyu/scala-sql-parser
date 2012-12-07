@@ -11,6 +11,18 @@ import scala.util.parsing.input.CharArrayReader.EofCh
 
 class SQLParser extends StandardTokenParsers {
 
+  class NormalizingStringParsers(str: String) {
+    /**
+     * Parse a cAsE-iNsEnSiTiVe string and normalize the result to s lower-case string
+     * @return a lower-case string
+     */
+    def ignoreCase = elem("case insensitive word", {
+      elem => ("""(?i)\Q""" + str + """\E""").r.findFirstIn(elem.chars).isDefined
+    }).map(_.chars.toLowerCase)
+  }
+
+  implicit def stringToComposableParsers(str: String): NormalizingStringParsers = new NormalizingStringParsers(str)
+
   class SqlLexical extends StdLexical {
     case class FloatLit(chars: String) extends Token {
       override def toString = chars
@@ -70,7 +82,7 @@ class SQLParser extends StandardTokenParsers {
   )
 
   def select: Parser[SelectStmt] =
-    "select" ~> projections ~
+    "select".ignoreCase ~> projections ~
       opt(relations) ~ opt(filter) ~
       opt(groupBy) ~ opt(orderBy) ~ opt(limit) <~ opt(";") ^^ {
     case p ~ r ~ f ~ g ~ o ~ l => SelectStmt(p, r, f, g, o, l)
@@ -85,22 +97,22 @@ class SQLParser extends StandardTokenParsers {
     case a ~ b => Assign(a, b)
   }
 
-  def set: Parser[Seq[Assign]] = "set" ~> repsep(assign, ",")
+  def set: Parser[Seq[Assign]] = "set".ignoreCase ~> repsep(assign, ",")
 
   def update: Parser[UpdateStmt] =
-    "update" ~> relation ~ set ~ opt(filter) <~ opt(";") ^^ {
+    "update".ignoreCase ~> relation ~ set ~ opt(filter) <~ opt(";") ^^ {
       case r ~ e ~ f => UpdateStmt(r, e, f)
     }
 
   def ins_row: Parser[InsRow] =
     (
-      "values" ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs) }
+      "values".ignoreCase ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs) }
     ) | (
       set ^^ { case assigns => Set(assigns) }
     )
 
   def insert: Parser[InsertStmt] =
-    "insert" ~> "into" ~> ident ~ ins_row <~ opt(";") ^^ {
+    "insert".ignoreCase ~> "into".ignoreCase ~> ident ~ ins_row <~ opt(";") ^^ {
       case i ~ r => InsertStmt(i, r)
     }
 
@@ -108,17 +120,17 @@ class SQLParser extends StandardTokenParsers {
 
   def projection: Parser[SqlProj] =
     "*" ^^ (_ => StarProj()) |
-    expr ~ opt("as" ~> ident) ^^ {
+    expr ~ opt("as".ignoreCase ~> ident) ^^ {
       case expr ~ ident => ExprProj(expr, ident)
     }
 
   def expr: Parser[SqlExpr] = or_expr
 
   def or_expr: Parser[SqlExpr] =
-    and_expr * ( "or" ^^^ { (a: SqlExpr, b: SqlExpr) => Or(a, b) } )
+    and_expr * ( "or".ignoreCase ^^^ { (a: SqlExpr, b: SqlExpr) => Or(a, b) } )
 
   def and_expr: Parser[SqlExpr] =
-    cmp_expr * ( "and" ^^^ { (a: SqlExpr, b: SqlExpr) => And(a, b) } )
+    cmp_expr * ( "and".ignoreCase ^^^ { (a: SqlExpr, b: SqlExpr) => And(a, b) } )
 
   // TODO: this function is nasty- clean it up!
   def cmp_expr: Parser[SqlExpr] =
@@ -126,13 +138,13 @@ class SQLParser extends StandardTokenParsers {
       ("=" | "<>" | "!=" | "<" | "<=" | ">" | ">=") ~ add_expr ^^ {
         case op ~ rhs => (op, rhs)
       } |
-      "between" ~ add_expr ~ "and" ~ add_expr ^^ {
+      "between".ignoreCase ~ add_expr ~ "and".ignoreCase ~ add_expr ^^ {
         case op ~ a ~ _ ~ b => (op, a, b)
       } |
-      opt("not") ~ "in" ~ "(" ~ (select | rep1sep(expr, ",")) ~ ")" ^^ {
+      opt("not".ignoreCase) ~ "in".ignoreCase ~ "(" ~ (select | rep1sep(expr, ",")) ~ ")" ^^ {
         case n ~ op ~ _ ~ a ~ _ => (op, a, n.isDefined)
       } |
-      opt("not") ~ "like" ~ add_expr ^^ { case n ~ op ~ a => (op, a, n.isDefined) }
+      opt("not".ignoreCase) ~ "like".ignoreCase ~ add_expr ^^ { case n ~ op ~ a => (op, a, n.isDefined) }
     ) ^^ {
       case lhs ~ elems =>
         elems.foldLeft(lhs) {
@@ -149,8 +161,8 @@ class SQLParser extends StandardTokenParsers {
           case (acc, (("like", e: SqlExpr, n: Boolean))) => Like(acc, e, n)
         }
     } |
-    "not" ~> cmp_expr ^^ (Not(_)) |
-    "exists" ~> "(" ~> select <~ ")" ^^ { case s => Exists(Subselect(s)) }
+    "not".ignoreCase ~> cmp_expr ^^ (Not(_)) |
+    "exists".ignoreCase ~> "(" ~> select <~ ")" ^^ { case s => Exists(Subselect(s)) }
 
   def add_expr: Parser[SqlExpr] =
     mult_expr * (
@@ -176,20 +188,20 @@ class SQLParser extends StandardTokenParsers {
     case_expr
 
   def case_expr: Parser[SqlExpr] =
-    "case" ~>
-      opt(expr) ~ rep1("when" ~> expr ~ "then" ~ expr ^^ { case a ~ _ ~ b => CaseExprCase(a, b) }) ~
-      opt("else" ~> expr) <~ "end" ^^ {
+    "case".ignoreCase ~>
+      opt(expr) ~ rep1("when".ignoreCase ~> expr ~ "then".ignoreCase ~ expr ^^ { case a ~ _ ~ b => CaseExprCase(a, b) }) ~
+      opt("else".ignoreCase ~> expr) <~ "end".ignoreCase ^^ {
       case Some(e) ~ cases ~ default => CaseExpr(e, cases, default)
       case None ~ cases ~ default => CaseWhenExpr(cases, default)
     }
 
   def known_function: Parser[SqlExpr] =
-    "count" ~> "(" ~> ( "*" ^^ (_ => CountStar()) | opt("distinct") ~ expr ^^ { case d ~ e => CountExpr(e, d.isDefined) }) <~ ")" |
-    "min" ~> "(" ~> expr <~ ")" ^^ (Min(_)) |
-    "max" ~> "(" ~> expr <~ ")" ^^ (Max(_)) |
-    "sum" ~> "(" ~> (opt("distinct") ~ expr) <~ ")" ^^ { case d ~ e => Sum(e, d.isDefined) } |
-    "avg" ~> "(" ~> (opt("distinct") ~ expr) <~ ")" ^^ { case d ~ e => Avg(e, d.isDefined) } |
-    "extract" ~> "(" ~ ("year" | "month" | "day") ~ "from" ~ expr ~ ")" ^^ {
+    "count" ~> "(" ~> ( "*" ^^ (_ => CountStar()) | opt("distinct".ignoreCase) ~ expr ^^ { case d ~ e => CountExpr(e, d.isDefined) }) <~ ")" |
+    "min".ignoreCase ~> "(" ~> expr <~ ")" ^^ (Min(_)) |
+    "max".ignoreCase ~> "(" ~> expr <~ ")" ^^ (Max(_)) |
+    "sum".ignoreCase ~> "(" ~> (opt("distinct".ignoreCase) ~ expr) <~ ")" ^^ { case d ~ e => Sum(e, d.isDefined) } |
+    "avg".ignoreCase ~> "(" ~> (opt("distinct".ignoreCase) ~ expr) <~ ")" ^^ { case d ~ e => Avg(e, d.isDefined) } |
+    "extract".ignoreCase ~> "(" ~ ("year".ignoreCase | "month".ignoreCase | "day".ignoreCase) ~ "from".ignoreCase ~ expr ~ ")" ^^ {
       case _ ~ "year" ~ _ ~ e ~ _ => Extract(e, YEAR)
       case _ ~ "month" ~ _ ~ e ~ _ => Extract(e, MONTH)
       case _ ~ "day" ~ _ ~ e ~ _ => Extract(e, DAY)
@@ -202,49 +214,49 @@ class SQLParser extends StandardTokenParsers {
     numericLit ^^ { case i => IntLiteral(i.toInt) } |
     floatLit ^^ { case f => FloatLiteral(f.toDouble) } |
     stringLit ^^ { case s => StringLiteral(s) } |
-    "null" ^^ (_ => NullLiteral()) |
-    "date" ~> stringLit ^^ (DateLiteral(_)) |
-    "interval" ~> stringLit ~ ("year" ^^^ (YEAR) | "month" ^^^ (MONTH) | "day" ^^^ (DAY)) ^^ {
+    "null".ignoreCase ^^ (_ => NullLiteral()) |
+    "date".ignoreCase ~> stringLit ^^ (DateLiteral(_)) |
+    "interval".ignoreCase ~> stringLit ~ ("year" ^^^ (YEAR) | "month" ^^^ (MONTH) | "day" ^^^ (DAY)) ^^ {
       case d ~ u => IntervalLiteral(d, u)
     }
 
-  def relations: Parser[Seq[SqlRelation]] = "from" ~> rep1sep(relation, ",")
+  def relations: Parser[Seq[SqlRelation]] = "from".ignoreCase ~> rep1sep(relation, ",")
 
   def relation: Parser[SqlRelation] =
-    simple_relation ~ rep(opt(join_type) ~ "join" ~ simple_relation ~ "on" ~ expr ^^
+    simple_relation ~ rep(opt(join_type) ~ "join".ignoreCase ~ simple_relation ~ "on".ignoreCase ~ expr ^^
       { case tpe ~ _ ~ r ~ _ ~ e => (tpe.getOrElse(InnerJoin), r, e)}) ^^ {
       case r ~ elems => elems.foldLeft(r) { case (x, r) => JoinRelation(x, r._2, r._1, r._3) }
     }
 
   def join_type: Parser[JoinType] =
-    ("left" | "right") ~ opt("outer") ^^ {
+    ("left".ignoreCase | "right".ignoreCase) ~ opt("outer".ignoreCase) ^^ {
       case "left" ~ o  => LeftJoin
       case "right" ~ o => RightJoin
     } |
-    "inner" ^^^ (InnerJoin)
+    "inner".ignoreCase ^^^ (InnerJoin)
 
   def simple_relation: Parser[SqlRelation] =
-    ident ~ opt("as") ~ opt(ident) ^^ {
+    ident ~ opt("as".ignoreCase) ~ opt(ident) ^^ {
       case ident ~ _ ~ alias => TableRelationAST(ident, alias)
     } |
-    "(" ~ select ~ ")" ~ opt("as") ~ ident ^^ {
+    "(" ~ select ~ ")" ~ opt("as".ignoreCase) ~ ident ^^ {
       case _ ~ select ~ _ ~ _ ~ alias => SubqueryRelationAST(select, alias)
     }
 
-  def filter: Parser[SqlExpr] = "where" ~> expr
+  def filter: Parser[SqlExpr] = "where".ignoreCase ~> expr
 
   def groupBy: Parser[SqlGroupBy] =
-    "group" ~> "by" ~> rep1sep(expr, ",") ~ opt("having" ~> expr) ^^ {
+    "group".ignoreCase ~> "by".ignoreCase ~> rep1sep(expr, ",") ~ opt("having".ignoreCase ~> expr) ^^ {
       case k ~ h => SqlGroupBy(k, h)
     }
 
   def orderBy: Parser[SqlOrderBy] =
-    "order" ~> "by" ~> rep1sep( expr ~ opt("asc" | "desc") ^^ {
+    "order".ignoreCase ~> "by".ignoreCase ~> rep1sep( expr ~ opt("asc".ignoreCase | "desc".ignoreCase) ^^ {
       case i ~ (Some("asc") | None) => (i, ASC)
       case i ~ Some("desc") => (i, DESC)
     }, ",") ^^ (SqlOrderBy(_))
 
-  def limit: Parser[Int] = "limit" ~> numericLit ^^ (_.toInt)
+  def limit: Parser[Int] = "limit".ignoreCase ~> numericLit ^^ (_.toInt)
 
   private def stripQuotes(s:String) = s.substring(1, s.length-1)
 
