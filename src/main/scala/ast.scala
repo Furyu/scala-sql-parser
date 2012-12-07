@@ -28,14 +28,14 @@ case class SelectStmt(projections: Seq[SqlProj],
         limit.map(x => "limit " + x.toString)).flatten.mkString(" ")
 }
 
-case class UpdateStmt(relation: SqlRelation,
+case class UpdateStmt(relations: Seq[SqlRelation],
                       sets: Seq[Assign],
                       filter: Option[SqlExpr],
                       ctx: Context = null) extends Stmt {
   def copyWithContext(c: Context) = copy(ctx = c)
   def sql =
     Seq("update",
-      "from " + relation.sql,
+      relations.map(_.sql).mkString(" "),
       filter.map(x => "where " + x.sql).getOrElse(""),
       sets.map(_.sql).mkString(", ")).flatten.mkString(" ")
 }

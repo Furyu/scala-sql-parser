@@ -100,7 +100,7 @@ class SQLParser extends StandardTokenParsers {
   def set: Parser[Seq[Assign]] = "set".ignoreCase ~> repsep(assign, ",")
 
   def update: Parser[UpdateStmt] =
-    "update".ignoreCase ~> relation ~ set ~ opt(filter) <~ opt(";") ^^ {
+    "update".ignoreCase ~> rep1sep(relation, ",") ~ set ~ opt(filter) <~ opt(";") ^^ {
       case r ~ e ~ f => UpdateStmt(r, e, f)
     }
 
