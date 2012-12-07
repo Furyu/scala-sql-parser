@@ -2,23 +2,18 @@ package com.github.stephentu.scalasqlparser
 
 import org.specs2.mutable._
 
-object UpdateQueriesSpec extends Specification {
+object InsertQueriesSpec extends Specification {
 
   object Queries {
     val q1 = """
-UPDATE `posts` SET `title`='one-modified' WHERE (`posts`.`id`=1)
-    """
-    val q2 =
-      """
-UPDATE
-  `posts` `p`
-JOIN
-  `users` `u`
-ON
-  p.user_id = u.id SET p.`title`='new_title'
-WHERE
-  u.`user_id` = 1
-      """.stripMargin
+insert into posts SET id = 1, title = "first post"
+             """
+    val q2 = """
+INSERT INTO
+  posts
+VALUES
+  (0 + 1, "first post")
+"""
   }
 
   "SQLParser" should {
