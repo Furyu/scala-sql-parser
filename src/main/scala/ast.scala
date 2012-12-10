@@ -1,6 +1,6 @@
 package com.github.stephentu.scalasqlparser
 
-trait Node extends PrettyPrinters {
+sealed trait Node extends PrettyPrinters {
   val ctx: Context
 
   def copyWithContext(ctx: Context): Node
@@ -67,9 +67,9 @@ case class Values(values: Seq[SqlExpr], ctx: Context = null) extends Node with I
   def sql: String = "values (" + values.map(_.sql) + ")"
 }
 
-trait AddExpr extends Binop
+sealed trait AddExpr extends Binop
 
-trait SqlProj extends Node
+sealed trait SqlProj extends Node
 case class ExprProj(expr: SqlExpr, alias: Option[String], ctx: Context = null) extends SqlProj {
   def copyWithContext(c: Context) = copy(ctx = c)
   def sql = Seq(Some(expr.sql), alias).flatten.mkString(" as ")
@@ -79,7 +79,7 @@ case class StarProj(ctx: Context = null) extends SqlProj {
   def sql = "*"
 }
 
-trait SqlExpr extends Node {
+sealed trait SqlExpr extends Node {
   def getType: DataType = UnknownType
   def isLiteral: Boolean = false
 
@@ -92,7 +92,7 @@ trait SqlExpr extends Node {
   def gatherFields: Seq[(FieldIdent, Boolean)]
 }
 
-trait Binop extends SqlExpr {
+sealed trait Binop extends SqlExpr {
   val lhs: SqlExpr
   val rhs: SqlExpr
 
@@ -117,7 +117,7 @@ case class And(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Binop {
   def copyWithChildren(lhs: SqlExpr, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
 }
 
-trait EqualityLike extends Binop
+sealed trait EqualityLike extends Binop
 case class Eq(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends EqualityLike {
   val opStr = "="
   def copyWithContext(c: Context) = copy(ctx = c)
@@ -129,7 +129,7 @@ case class Neq(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Equality
   def copyWithChildren(lhs: SqlExpr, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
 }
 
-trait InequalityLike extends Binop
+sealed trait InequalityLike extends Binop
 case class Ge(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends InequalityLike {
   val opStr = "<="
   def copyWithContext(c: Context) = copy(ctx = c)
@@ -187,7 +187,7 @@ case class Div(lhs: SqlExpr, rhs: SqlExpr, ctx: Context = null) extends Binop {
   def copyWithChildren(lhs: SqlExpr, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
 }
 
-trait Unop extends SqlExpr {
+sealed trait Unop extends SqlExpr {
   val expr: SqlExpr
   val opStr: String
   override def isLiteral = expr.isLiteral
@@ -217,7 +217,7 @@ case class Subselect(subquery: SelectStmt, ctx: Context = null) extends SqlExpr 
   def sql = "(" + subquery.sql + ")"
 }
 
-trait SqlAgg extends SqlExpr
+sealed trait SqlAgg extends SqlExpr
 case class CountStar(ctx: Context = null) extends SqlAgg {
   def copyWithContext(c: Context) = copy(ctx = c)
   def gatherFields = Seq.empty
@@ -259,7 +259,7 @@ case class AggCall(name: String, args: Seq[SqlExpr], ctx: Context = null) extend
   def sql = Seq(name, "(", args.map(_.sql).mkString(", "), ")").mkString("")
 }
 
-trait SqlFunction extends SqlExpr {
+sealed trait SqlFunction extends SqlExpr {
   val name: String
   val args: Seq[SqlExpr]
   override def isLiteral = args.foldLeft(true)(_ && _.isLiteral)
@@ -330,7 +330,7 @@ case class UnaryMinus(expr: SqlExpr, ctx: Context = null) extends Unop {
   def copyWithContext(c: Context) = copy(ctx = c)
 }
 
-trait LiteralExpr extends SqlExpr {
+sealed trait LiteralExpr extends SqlExpr {
   override def isLiteral = true
   def gatherFields = Seq.empty
 }
@@ -359,7 +359,7 @@ case class IntervalLiteral(e: String, unit: ExtractType, ctx: Context = null) ex
   def sql = Seq("interval", "\"" + e + "\"", unit.toString) mkString " "
 }
 
-trait SqlRelation extends Node
+sealed trait SqlRelation extends Node
 case class TableRelationAST(name: String, alias: Option[String], ctx: Context = null) extends SqlRelation {
   def copyWithContext(c: Context) = copy(ctx = c)
   def sql = Seq(Some(name), alias).flatten.mkString(" ")
