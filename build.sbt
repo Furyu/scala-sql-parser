@@ -1,6 +1,6 @@
 name := "scala-sql-parser"
 
-version := "0.1"
+version := "0.1-SNAPSHOT"
 
 organization := "com.github.stephentu.scalasqlparser"
 
