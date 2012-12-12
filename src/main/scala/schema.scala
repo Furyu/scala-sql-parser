@@ -80,3 +80,65 @@ where table_schema = 'public' and table_name = ?
     }).toMap)
   }
 }
+
+class MySQLSchema(hostname: String, port: Int, db: String, props: Properties) extends Schema {
+  Class.forName("com.mysql.jdbc.Driver")
+  private val conn = DriverManager.getConnection(
+    "jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
+
+  def loadSchema() = {
+    import Conversions._
+    val s = conn.prepareStatement("""
+select table_name from information_schema.tables
+where table_schema = ?
+      """)
+    s.setString(1, db)
+    val r = s.executeQuery
+    val tables = r.map(_.getString(1))
+    s.close()
+
+    new Definitions(tables.map(name => {
+      val s = conn.prepareStatement("""
+select
+  column_name, data_type, character_maximum_length, character_octet_length,
+  numeric_precision, numeric_scale
+from information_schema.columns
+where table_schema = ? and table_name = ?
+        """)
+      s.setString(1, db)
+      s.setString(2, name)
+      val r = s.executeQuery
+      val columns = r.map(rs => {
+        val cname = rs.getString(1)
+        TableColumn(cname, rs.getString(2) match {
+          case "tinytext" | "text" | "mediumtext" | "longtext" =>
+            VariableLenString(rs.getInt(3))
+          case "char" | "varchar" =>
+            FixedLenString(rs.getInt(3))
+          case "tinyint" =>
+            IntType(1)
+          case "smallint" =>
+            IntType(2)
+          case "mediumint" =>
+            IntType(3)
+          case "int" =>
+            IntType(4)
+          case "bigint" =>
+            IntType(8)
+          case "float" | "double" =>
+            UnknownType
+          case "date" | "datetime" | "timestamp" =>
+            DateType
+          case "numeric" | "decimal" =>
+            DecimalType(rs.getInt(6), rs.getInt(5))
+          case "tinyblob" | "blob" | "mediumblob" | "longblob" =>
+            VariableLenByteArray(Some(rs.getInt(4)))
+          case e =>
+            sys.error("unknown type: " + e)
+        })
+      })
+      s.close()
+      (name, columns)
+    }).toMap)
+  }
+}
