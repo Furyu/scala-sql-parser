@@ -27,6 +27,12 @@ trait Transformers {
                   filter = f.map(recur),
                   groupBy = g.map(recur),
                   orderBy = o.map(recur))
+      case node @ UpdateStmt(r, s, f, _) =>
+        node.copy(relations = r.map(recur),
+          sets = s.map(recur),
+          filter = f.map(recur))
+      case node @ InsertStmt(_, i, _) =>
+        node.copy(insRow = recur(i))
       case node @ ExprProj(e, _, _) => node.copy(expr = recur(e))
       case node @ Or(l, r, _) => node.copy(lhs = recur(l), rhs = recur(r))
       case node @ And(l, r, _) => node.copy(lhs = recur(l), rhs = recur(r))
@@ -66,6 +72,9 @@ trait Transformers {
         node.copy(left = recur(l), right = recur(r), clause = recur(c))
       case node @ SqlGroupBy(k, h, _) => node.copy(keys = k.map(recur), having = h.map(recur))
       case node @ SqlOrderBy(k, _) => node.copy(keys = k.map(x => (recur(x._1), x._2)))
+      case node @ Assign(l, r, _) => node.copy(lhs = recur(l), rhs = recur(r))
+      case node @ Set(s, _) => node.copy(sets = s.map(recur))
+      case node @ Values(v, _) => node.copy(values = v.map(recur))
       case e => e
     }
   }

@@ -28,6 +28,10 @@ trait Traversals {
     n match {
       case SelectStmt(p, r, f, g, o, _, _) =>
         p.map(recur); r.map(_.map(recur)); f.map(recur); g.map(recur); o.map(recur)
+      case node @ UpdateStmt(r, s, f, _) =>
+        r.map(recur); s.map(recur); f.map(recur)
+      case node @ InsertStmt(_, i, _) =>
+        recur(i)
       case ExprProj(e, _, _) => recur(e)
       case Or(l, r, _) => recur(l); recur(r)
       case And(l, r, _) => recur(l); recur(r)
@@ -64,6 +68,9 @@ trait Traversals {
       case JoinRelation(l, r, _, c, _) => recur(l); recur(r); recur(c)
       case SqlGroupBy(k, h, _) => k.map(recur); h.map(recur)
       case SqlOrderBy(k, _) => k.map(x => recur(x._1))
+      case node @ Assign(l, r, _) => recur(l); recur(r)
+      case node @ Set(s, _) => s.map(recur)
+      case node @ Values(v, _) => v.map(recur)
       case _ =>
     }
     postVisit(n)

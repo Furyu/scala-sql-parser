@@ -51,7 +51,6 @@ case class InsertStmt(tableName: String, insRow: InsRow, ctx: Context = null) ex
 case class Assign(lhs: FieldIdent, rhs: SqlExpr, ctx: Context = null) extends Node {
   val opStr = "="
   def copyWithContext(c: Context) = copy(ctx = c)
-  def copyWithChildren(lhs: FieldIdent, rhs: SqlExpr) = copy(lhs = lhs, rhs = rhs, ctx = null)
   def sql: String = lhs.sql + " = " + rhs.sql
 }
 
