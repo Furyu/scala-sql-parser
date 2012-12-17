@@ -1,7 +1,8 @@
 package com.github.stephentu.scalasqlparser
 
+case class ResolutionException(msg: String) extends RuntimeException(msg)
+
 trait Resolver extends Transformers with Traversals {
-  case class ResolutionException(msg: String) extends RuntimeException(msg)
 
   def resolve(stmt: Stmt, schema: Definitions): Stmt = {
     // init contexts
