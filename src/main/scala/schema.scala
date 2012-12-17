@@ -14,7 +14,7 @@ case class TableColumn(name: String, tpe: DataType) extends PrettyPrinters {
     "TableColumn(" + _q(name) + ", " + tpe.toString + ")"
 }
 
-class Definitions(val defns : Map[String, Seq[TableColumn]]) extends PrettyPrinters {
+case class Definitions(val defns : Map[String, Seq[TableColumn]]) extends PrettyPrinters {
 
   def tableExists(table: String): Boolean = defns.contains(table)
 
