@@ -81,13 +81,29 @@ where table_schema = 'public' and table_name = ?
   }
 }
 
-class MySQLSchema(hostname: String, port: Int, db: String, props: Properties) extends Schema {
+object MySQLSchema {
+  // Register the driver for the case that MySQLSchema is used independently
+  // (e.g. other part of your application does not use MySQL driver)
   Class.forName("com.mysql.jdbc.Driver")
-  private val conn = DriverManager.getConnection(
-    "jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
+
+  def apply(hostname: String, port: Int, db: String, props: Properties): MySQLSchema = {
+    val conn = DriverManager.getConnection(
+      "jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
+//    val driver = Class.forName("com.mysql.jdbc.Driver").getConstructor().newInstance().asInstanceOf[java.sql.Driver]
+//    val conn = driver.connect("jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
+    new MySQLSchema(conn)
+  }
+}
+
+/**
+ * The schema provider for MySQL
+ * @param conn the connection where the database schema is look for.
+ */
+class MySQLSchema(conn: Connection) extends Schema {
 
   def loadSchema() = {
     import Conversions._
+    val db = conn.getSchema
     val s = conn.prepareStatement("""
 select table_name from information_schema.tables
 where table_schema = ?
