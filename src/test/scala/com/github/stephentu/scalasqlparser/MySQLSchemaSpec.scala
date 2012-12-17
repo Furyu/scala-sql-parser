@@ -9,7 +9,7 @@ object MySQLSchemaSpec extends Specification {
     "provide a schema from an existing connection" in {
       Class.forName("com.mysql.jdbc.Driver")
       val conn = DriverManager.getConnection("jdbc:mysql://localhost/test")
-      new MySQLSchema(conn).loadSchema()
+      new MySQLSchema(conn, "test").loadSchema()
       conn.close()
       success
     }

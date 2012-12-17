@@ -91,24 +91,28 @@ object MySQLSchema {
       "jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
 //    val driver = Class.forName("com.mysql.jdbc.Driver").getConstructor().newInstance().asInstanceOf[java.sql.Driver]
 //    val conn = driver.connect("jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
-    new MySQLSchema(conn)
+    MySQLSchema(conn)
   }
+
+  def apply(conn: Connection): MySQLSchema = {
+    new MySQLSchema(conn, conn.getSchema)
+  }
+
 }
 
 /**
  * The schema provider for MySQL
  * @param conn the connection where the database schema is look for.
  */
-class MySQLSchema(conn: Connection) extends Schema {
+class MySQLSchema(conn: Connection, schema: String) extends Schema {
 
   def loadSchema() = {
     import Conversions._
-    val db = conn.getSchema
     val s = conn.prepareStatement("""
 select table_name from information_schema.tables
 where table_schema = ?
       """)
-    s.setString(1, db)
+    s.setString(1, schema)
     val r = s.executeQuery
     val tables = r.map(_.getString(1))
     s.close()
@@ -121,7 +125,7 @@ select
 from information_schema.columns
 where table_schema = ? and table_name = ?
         """)
-      s.setString(1, db)
+      s.setString(1, schema)
       s.setString(2, name)
       val r = s.executeQuery
       val columns = r.map(rs => {
