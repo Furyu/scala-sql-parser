@@ -1,6 +1,6 @@
 package com.github.stephentu.scalasqlparser
 
-abstract trait DataType
+sealed trait DataType
 case class IntType(size: Int) extends DataType
 case class DecimalType(scale: Int, precision: Int) extends DataType
 case class FixedLenString(len: Int) extends DataType

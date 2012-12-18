@@ -5,7 +5,7 @@ import java.util.Properties
 
 // these are the types of relations which can show up in a
 // FROM clause
-abstract trait Relation
+sealed trait Relation
 case class TableRelation(name: String) extends Relation
 case class SubqueryRelation(stmt: SelectStmt) extends Relation
 

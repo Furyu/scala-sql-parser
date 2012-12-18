@@ -2,7 +2,7 @@ package com.github.stephentu.scalasqlparser
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-abstract trait Symbol {
+sealed trait Symbol {
   val ctx: Context
 }
 
@@ -15,7 +15,7 @@ case class ColumnSymbol(relation: String, column: String, ctx: Context) extends 
 // {group,order} by clause (but not the having clause of a group by)
 case class ProjectionSymbol(name: String, ctx: Context) extends Symbol
 
-abstract trait ProjectionType
+sealed trait ProjectionType
 case class NamedProjection(name: String, expr: SqlExpr, pos: Int) extends ProjectionType
 case object WildcardProjection extends ProjectionType
 
