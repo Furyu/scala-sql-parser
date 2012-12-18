@@ -270,7 +270,7 @@ case class FunctionCall(name: String, args: Seq[SqlExpr], ctx: Context = null) e
   def copyWithContext(c: Context) = copy(ctx = c)
 }
 
-sealed abstract trait ExtractType
+sealed trait ExtractType
 case object YEAR extends ExtractType
 case object MONTH extends ExtractType
 case object DAY extends ExtractType
@@ -368,7 +368,7 @@ case class SubqueryRelationAST(subquery: SelectStmt, alias: String, ctx: Context
   def sql = Seq("(", subquery.sql, ")", "as", alias) mkString " "
 }
 
-sealed abstract trait JoinType {
+sealed trait JoinType {
   def sql: String
 }
 case object LeftJoin extends JoinType {
@@ -386,7 +386,7 @@ case class JoinRelation(left: SqlRelation, right: SqlRelation, tpe: JoinType, cl
   def sql = Seq(left.sql, tpe.sql, right.sql, "on", "(", clause.sql, ")") mkString " "
 }
 
-sealed abstract trait OrderType
+sealed trait OrderType
 case object ASC extends OrderType
 case object DESC extends OrderType
 
