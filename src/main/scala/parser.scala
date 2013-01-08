@@ -109,6 +109,13 @@ class SQLParser extends StandardTokenParsers {
     (
       "values".ignoreCase ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs) }
     ) | (
+      "(" ~> rep1sep(field, ",") ~ ")" ~ "values".ignoreCase ~ "(" ~ repsep(expr, ",") <~ ")" ^^ {
+        case fields ~ _ ~ _ ~ _ ~ exprs =>
+          Set(
+            fields.zip(exprs).map(t => Assign(t._1, t._2)).toSeq
+          )
+      }
+    ) | (
       set ^^ { case assigns => Set(assigns) }
     )
 

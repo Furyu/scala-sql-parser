@@ -14,6 +14,14 @@ INSERT INTO
 VALUES
   (0 + 1, "first post")
 """
+    val q3 =
+      """
+INSERT INTO
+ `posts`
+ (`id`,`title`)
+VALUES
+  (1,'first post');
+      """.stripMargin
   }
 
   "SQLParser" should {
@@ -25,6 +33,11 @@ VALUES
     "parse query2" in {
       val parser = new SQLParser
       val r = parser.parse(Queries.q2)
+      r should beSome
+    }
+    "parse query3" in {
+      val parser = new SQLParser
+      val r = parser.parse(Queries.q3)
       r should beSome
     }
   }
