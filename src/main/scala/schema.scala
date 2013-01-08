@@ -91,11 +91,7 @@ object MySQLSchema {
       "jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
 //    val driver = Class.forName("com.mysql.jdbc.Driver").getConstructor().newInstance().asInstanceOf[java.sql.Driver]
 //    val conn = driver.connect("jdbc:mysql://%s:%d/%s".format(hostname, port, db), props)
-    MySQLSchema(conn)
-  }
-
-  def apply(conn: Connection): MySQLSchema = {
-    new MySQLSchema(conn, conn.getSchema)
+    new MySQLSchema(conn, db)
   }
 
 }
