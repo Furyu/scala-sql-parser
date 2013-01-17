@@ -61,7 +61,7 @@ case class Set(sets: Seq[Assign], ctx: Context = null) extends Node with InsRow 
   def sql: String = sets.map(_.sql).mkString(", ")
 }
 
-case class PositionalValueBinding(value: SqlExpr, symbol: Option[Symbol] = None, ctx: Context = null) extends Node {
+case class PositionalValueBinding(value: SqlExpr, symbol: Option[ColumnSymbol] = None, ctx: Context = null) extends Node {
   def copyWithContext(c: Context): Node = copy(ctx = c)
   def sql: String = value.sql
 }
