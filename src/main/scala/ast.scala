@@ -66,7 +66,7 @@ case class PositionalValueBinding(value: SqlExpr, symbol: Option[Symbol] = None,
   def sql: String = value.sql
 }
 
-case class NamedValueBinding(value: SqlExpr, field: FieldIdent, ctx: Context = null) extends Node {
+case class NamedValueBinding(value: SqlExpr, field: ColumnFieldIdent, ctx: Context = null) extends Node {
   def copyWithContext(c: Context): Node = copy(ctx = c)
   def sql: String = value.sql
 }
@@ -225,6 +225,11 @@ case class Exists(select: Subselect, ctx: Context = null) extends SqlExpr {
 case class FieldIdent(qualifier: Option[String], name: String, symbol: Symbol = null, ctx: Context = null) extends SqlExpr {
   def copyWithContext(c: Context) = copy(symbol = null, ctx = c)
   def gatherFields = Seq((this, false))
+  def sql = Seq(qualifier, Some(name)).flatten.mkString(".")
+}
+
+case class ColumnFieldIdent(qualifier: Option[String], name: String, symbol: Option[ColumnSymbol] = None, ctx: Context = null) extends Node {
+  def copyWithContext(c: Context) = copy(symbol = None, ctx = c)
   def sql = Seq(qualifier, Some(name)).flatten.mkString(".")
 }
 

@@ -1,6 +1,7 @@
 package com.github.stephentu.scalasqlparser
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import collection.mutable
 
 sealed trait Symbol {
   val ctx: Context
@@ -86,6 +87,9 @@ class Context(val parent: Either[Definitions, Context]) {
   // finds an column by name
   def lookupColumn(qual: Option[String], name: String, inProjScope: Boolean): Seq[Symbol] =
     lookupColumn0(qual, name, inProjScope, None)
+
+  def lookupColumnSymbol(qual: Option[String], name: String): Seq[ColumnSymbol] =
+    lookupColumn0(qual, name, false, None).map(_.asInstanceOf[ColumnSymbol])
 
   /**
    * Look-up the N-th column in the table or not

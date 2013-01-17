@@ -138,14 +138,14 @@ class ResolverSpec extends Specification {
       val stmt = s0.asInstanceOf[InsertStmt]
       val values = stmt.insRow.asInstanceOf[NamedValues].values
       stmt.table.name must be equalTo ("customer")
-      values(7).field.symbol must be equalTo (ColumnSymbol("customer", "c_comment", values(7).ctx))
-      values(6).field.symbol must be equalTo (ColumnSymbol("customer", "c_mktsegment", values(6).ctx))
-      values(5).field.symbol must be equalTo (ColumnSymbol("customer", "c_acctbal", values(5).ctx))
-      values(4).field.symbol must be equalTo (ColumnSymbol("customer", "c_phone", values(4).ctx))
-      values(3).field.symbol must be equalTo (ColumnSymbol("customer", "c_nationkey", values(3).ctx))
-      values(2).field.symbol must be equalTo (ColumnSymbol("customer", "c_address", values(2).ctx))
-      values(1).field.symbol must be equalTo (ColumnSymbol("customer", "c_name", values(1).ctx))
-      values(0).field.symbol must be equalTo (ColumnSymbol("customer", "c_custkey", values(0).ctx))
+      values(7).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_comment", values(7).ctx)))
+      values(6).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_mktsegment", values(6).ctx)))
+      values(5).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_acctbal", values(5).ctx)))
+      values(4).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_phone", values(4).ctx)))
+      values(3).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_nationkey", values(3).ctx)))
+      values(2).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_address", values(2).ctx)))
+      values(1).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_name", values(1).ctx)))
+      values(0).field.symbol must be equalTo (Some(ColumnSymbol("customer", "c_custkey", values(0).ctx)))
     }
   }
 }

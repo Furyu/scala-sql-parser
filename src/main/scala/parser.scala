@@ -89,12 +89,16 @@ class SQLParser extends StandardTokenParsers {
     case p ~ r ~ f ~ g ~ o ~ l => SelectStmt(p, r, f, g, o, l)
   }
 
-  def field: Parser[FieldIdent] = ident ~ opt( "." ~> ident ) ^^ {
-    case id ~ None => FieldIdent(None, id)
-    case a ~ Some( b: String ) => FieldIdent(Some(a), b)
+  def ident_dot_opt_ident = ident ~ opt("." ~> ident)
+
+  def field_ident: Parser[FieldIdent] = {
+    ident_dot_opt_ident ^^ {
+      case id ~ None => FieldIdent(None, id)
+      case a ~ Some(b: String) => FieldIdent(Some(a), b)
+    }
   }
 
-  def assign: Parser[Assign] = field ~ ("=" ~> expr) ^^ {
+  def assign: Parser[Assign] = field_ident ~ ("=" ~> expr) ^^ {
     case a ~ b => Assign(a, b)
   }
 
@@ -109,12 +113,18 @@ class SQLParser extends StandardTokenParsers {
     (
       "values".ignoreCase ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs.map(e => PositionalValueBinding(e))) }
     ) | (
-      "(" ~> rep1sep(field, ",") ~ ")" ~ "values".ignoreCase ~ "(" ~ repsep(expr, ",") <~ ")" ^^ {
+      "(" ~> rep1sep(ident_dot_opt_ident, ",") ~ ")" ~ "values".ignoreCase ~ "(" ~ repsep(expr, ",") <~ ")" ^^ {
         case fields ~ _ ~ _ ~ _ ~ exprs =>
           NamedValues(
             fields.zip(exprs).map {
               case (f, e) =>
-                NamedValueBinding(e, f)
+                f match {
+                  case id ~ None =>
+                    NamedValueBinding(e, ColumnFieldIdent(None, id))
+                  case a ~ Some(b) =>
+                    NamedValueBinding(e, ColumnFieldIdent(Some(a), b))
+                }
+
             }
           )
       }

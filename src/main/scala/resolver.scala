@@ -95,6 +95,11 @@ trait Resolver extends Transformers with Traversals {
             if (cols.isEmpty) throw new ResolutionException("no such column: " + f.sql)
             if (cols.size > 1) throw new ResolutionException("ambiguous reference: " + f.sql)
             (Some(FieldIdent(qual, name, cols.head, ctx)), false)
+          case f @ ColumnFieldIdent(qual, name, _, ctx) =>
+            val cols = ctx.lookupColumnSymbol(qual, name)
+            if (cols.isEmpty) throw new ResolutionException("no such column: " + f.sql)
+            if (cols.size > 1) throw new ResolutionException("ambiguous reference: " + f.sql)
+            (Some(f.copy(symbol = cols.headOption)), false)
           case a @ Values(bindings, ctx) =>
             val resolvedBindings = bindings.zipWithIndex.map {
               case (b, i) =>
