@@ -97,7 +97,7 @@ class Context(val parent: Either[Definitions, Context]) {
    * @param colIdx The column's index in the table
    * @return
    */
-  def lookupColumnNth(table: String, colIdx: Int): Option[Symbol] = {
+  def lookupColumnNth(table: String, colIdx: Int): Option[ColumnSymbol] = {
     defns.lookup(table, colIdx).map(tc => ColumnSymbol(table, tc.name, this))
   }
 
