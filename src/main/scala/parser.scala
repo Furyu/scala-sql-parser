@@ -107,12 +107,15 @@ class SQLParser extends StandardTokenParsers {
 
   def ins_row: Parser[InsRow] =
     (
-      "values".ignoreCase ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs) }
+      "values".ignoreCase ~> "(" ~> repsep(expr, ",") <~ ")" ^^ { case exprs => Values(exprs.map(e => PositionalValueBinding(e))) }
     ) | (
       "(" ~> rep1sep(field, ",") ~ ")" ~ "values".ignoreCase ~ "(" ~ repsep(expr, ",") <~ ")" ^^ {
         case fields ~ _ ~ _ ~ _ ~ exprs =>
-          Set(
-            fields.zip(exprs).map(t => Assign(t._1, t._2)).toSeq
+          NamedValues(
+            fields.zip(exprs).map {
+              case (f, e) =>
+                NamedValueBinding(e, f)
+            }
           )
       }
     ) | (
@@ -120,7 +123,7 @@ class SQLParser extends StandardTokenParsers {
     )
 
   def insert: Parser[InsertStmt] =
-    "insert".ignoreCase ~> "into".ignoreCase ~> ident ~ ins_row <~ opt(";") ^^ {
+    "insert".ignoreCase ~> "into".ignoreCase ~> (ident  ^^ { case ident => TableRelationAST(ident, None) }) ~ ins_row <~ opt(";") ^^ {
       case i ~ r => InsertStmt(i, r)
     }
 

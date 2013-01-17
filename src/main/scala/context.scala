@@ -87,6 +87,16 @@ class Context(val parent: Either[Definitions, Context]) {
   def lookupColumn(qual: Option[String], name: String, inProjScope: Boolean): Seq[Symbol] =
     lookupColumn0(qual, name, inProjScope, None)
 
+  /**
+   * Look-up the N-th column in the table or not
+   * @param table The table's name on which look-up is done
+   * @param colIdx The column's index in the table
+   * @return
+   */
+  def lookupColumnNth(table: String, colIdx: Int): Option[Symbol] = {
+    defns.lookup(table, colIdx).map(tc => ColumnSymbol(table, tc.name, this))
+  }
+
   private def lookupColumn0(qual: Option[String],
                             name: String,
                             inProjScope: Boolean,

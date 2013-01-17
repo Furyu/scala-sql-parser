@@ -662,6 +662,48 @@ group by
 order by
   cntrycode;
 """
+
+  val q23 = """
+insert into
+  customer
+values
+  (
+    'comment1',
+    'mktsegment1',
+    1.23,
+    'phone1',
+    2345,
+    'address1',
+    'name1',
+    3456
+  );
+"""
+
+  val q24 = """
+insert into
+  customer
+(
+  c_custkey,
+  c_name,
+  c_address,
+  c_nationkey,
+  c_phone,
+  c_acctbal,
+  c_mktsegment,
+  c_comment
+)
+values
+  (
+    3456,
+    'name2',
+    'address2',
+    2345,
+    'phone2',
+    1.23,
+    'mktsegment2',
+    'comment2'
+  );
+"""
 }
 
 class SQLParserSpec extends Specification {

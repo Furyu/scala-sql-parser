@@ -75,6 +75,9 @@ trait Transformers {
       case node @ Assign(l, r, _) => node.copy(lhs = recur(l), rhs = recur(r))
       case node @ Set(s, _) => node.copy(sets = s.map(recur))
       case node @ Values(v, _) => node.copy(values = v.map(recur))
+      case node @ PositionalValueBinding(v, _, _) => node.copy(value = recur(v))
+      case node @ NamedValues(v, _) => node.copy(values = v.map(recur))
+      case node @ NamedValueBinding(v, f, _) => node.copy(value = recur(v), field = recur(f))
       case e => e
     }
   }

@@ -40,11 +40,11 @@ case class UpdateStmt(relations: Seq[SqlRelation],
       sets.map(_.sql).mkString(", ")).flatten.mkString(" ")
 }
 
-case class InsertStmt(tableName: String, insRow: InsRow, ctx: Context = null) extends Stmt {
+case class InsertStmt(table: TableRelationAST, insRow: InsRow, ctx: Context = null) extends Stmt {
   def copyWithContext(c: Context): Node = copy(ctx = c)
   def sql: String =
     Seq("insert",
-      "into " + tableName,
+      "into " + table,
       insRow.sql).mkString(" ")
 }
 
@@ -61,9 +61,27 @@ case class Set(sets: Seq[Assign], ctx: Context = null) extends Node with InsRow 
   def sql: String = sets.map(_.sql).mkString(", ")
 }
 
-case class Values(values: Seq[SqlExpr], ctx: Context = null) extends Node with InsRow {
+case class PositionalValueBinding(value: SqlExpr, symbol: Option[Symbol] = None, ctx: Context = null) extends Node {
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+  def sql: String = value.sql
+}
+
+case class NamedValueBinding(value: SqlExpr, field: FieldIdent, ctx: Context = null) extends Node {
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+  def sql: String = value.sql
+}
+
+case class Values(values: Seq[PositionalValueBinding], ctx: Context = null) extends InsRow {
   def copyWithContext(c: Context): Node = copy(ctx = c)
   def sql: String = "values (" + values.map(_.sql) + ")"
+}
+
+/**
+ * (col1, col2, ...) values (val1, val2, ...)
+ */
+case class NamedValues(values: Seq[NamedValueBinding], ctx: Context = null) extends InsRow {
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+  def sql: String = "(" + values.map(_.sql).mkString(", ") + ") values (" + values.map(_.sql).mkString(", ") + ")"
 }
 
 sealed trait AddExpr extends Binop

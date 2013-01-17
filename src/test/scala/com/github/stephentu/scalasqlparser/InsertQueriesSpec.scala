@@ -4,7 +4,7 @@ import org.specs2.mutable._
 
 object InsertQueriesSpec extends Specification {
 
-  object Queries {
+  object InsertQueries {
     val q1 = """
 insert into posts SET id = 1, title = "first post"
              """
@@ -27,17 +27,22 @@ VALUES
   "SQLParser" should {
     "parse query1" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q1)
+      val r = parser.parse(InsertQueries.q1)
       r should beSome
     }
     "parse query2" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q2)
+      val r = parser.parse(InsertQueries.q2)
       r should beSome
     }
     "parse query3" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q3)
+      val r = parser.parse(InsertQueries.q3)
+      r should beSome
+    }
+    "parse query23" in {
+      val parser = new SQLParser
+      val r = parser.parse(Queries.q23)
       r should beSome
     }
   }

@@ -81,11 +81,13 @@ trait Resolver extends Transformers with Traversals {
         traverse(projections, relations, ctx)
       case s @ UpdateStmt(relations, _, _, ctx) =>
         traverse(Seq.empty, Some(relations), ctx)
+      case s @ InsertStmt(table, _, ctx) =>
+        traverse(Seq.empty, Some(Seq(table)), ctx)
       case _ => (None, true)
     })
 
-    // resolve field idents
-    def resolveFIs(ss: Stmt): Stmt = {
+    // resolve symbols in field idents and positional value bindings
+    def resolveSymbols(ss: Stmt): Stmt = {
       def visit[N <: Node](n: N, allowProjs: Boolean): N = {
         topDownTransformation(n) {
           case f @ FieldIdent(qual, name, _, ctx) =>
@@ -93,8 +95,14 @@ trait Resolver extends Transformers with Traversals {
             if (cols.isEmpty) throw new ResolutionException("no such column: " + f.sql)
             if (cols.size > 1) throw new ResolutionException("ambiguous reference: " + f.sql)
             (Some(FieldIdent(qual, name, cols.head, ctx)), false)
+          case a @ Values(bindings, ctx) =>
+            val resolvedBindings = bindings.zipWithIndex.map {
+              case (b, i) =>
+                b.copy(symbol = Some(ctx.lookupColumnNth(ss.asInstanceOf[InsertStmt].table.name, i).get))
+            }
+            (Some(Values(resolvedBindings, ctx)), false)
           case ss: SelectStmt =>
-            (Some(resolveFIs(ss)), false)
+            (Some(resolveSymbols(ss)), false)
           case _ => (None, true)
         }.asInstanceOf[N]
       }
@@ -112,12 +120,16 @@ trait Resolver extends Transformers with Traversals {
             sets = s.map(s0 => visit(s0, false)),
             filter = f.map(f0 => visit(f0, false))
           )
+        case ss @ InsertStmt(t, r, _) =>
+          ss.copy(
+            insRow = visit(r, true)
+          )
         case _ =>
           ss
       }
     }
 
-    val res = resolveFIs(n1)
+    val res = resolveSymbols(n1)
 
     def fixContextProjections(ss: SelectStmt): Unit = {
       val x = ss.ctx.projections.map {

@@ -22,6 +22,16 @@ case class Definitions(val defns : Map[String, Seq[TableColumn]]) extends Pretty
     defns.get(table).flatMap(_.filter(_.name == col).headOption)
   }
 
+  /**
+   * Look-up N-th column in the table
+   * @param table The table's name on which look-up is done
+   * @param colIdx The column's index in the table
+   * @return
+   */
+  def lookup(table: String, colIdx: Int): Option[TableColumn] = {
+    defns.get(table).flatMap(_.lift(colIdx))
+  }
+
   def scalaStr: String = {
     "new Definitions(Map(" + (defns.map { case (k, v) =>
       (_q(k), "Seq(" + v.map(_.scalaStr).mkString(", ") + ")")
