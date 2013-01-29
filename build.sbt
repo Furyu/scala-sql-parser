@@ -1,8 +1,8 @@
 name := "scala-sql-parser"
 
-version := "0.1-SNAPSHOT"
+version := "0.1.0"
 
-organization := "com.github.stephentu.scalasqlparser"
+organization := "jp.furyu.scalasqlparser"
 
 libraryDependencies ++= Seq(
   "postgresql" % "postgresql" % "9.1-901-1.jdbc4" % "test",
