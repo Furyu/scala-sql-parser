@@ -8,8 +8,11 @@ import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.token._
 
 import scala.util.parsing.input.CharArrayReader.EofCh
+import org.slf4j.LoggerFactory
 
 class SQLParser extends StandardTokenParsers {
+
+  lazy val logger = LoggerFactory.getLogger(classOf[SQLParser])
 
   class NormalizingStringParsers(str: String) {
     /**
@@ -284,7 +287,7 @@ class SQLParser extends StandardTokenParsers {
   def parse(sql:String): Option[Stmt] = {
     phrase(select | insert | update)(new lexical.Scanner(sql)) match {
       case Success(r, q) => Option(r)
-      case x => println(x); None
+      case x => logger.warn(x.toString, new Exception); None
     }
   }
 }

@@ -704,6 +704,10 @@ values
     'comment2'
   );
 """
+
+  val q25 = """
+drop table customer;
+"""
 }
 
 class SQLParserSpec extends Specification {
@@ -833,6 +837,12 @@ class SQLParserSpec extends Specification {
       val parser = new SQLParser
       val r = parser.parse(Queries.q22)
       r should beSome
+    }
+
+    "not parse query25" in {
+      val parser = new SQLParser
+      val r = parser.parse(Queries.q25)
+      r should beNone
     }
   }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration debug="false">
+    <contextName>scalasqlparser</contextName>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%contextName] %-5level %logger{18} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.github.stephentu.scalasqlparser" level="WARN" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+
+    <root level="debug">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
