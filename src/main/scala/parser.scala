@@ -73,7 +73,8 @@ class SQLParser extends StandardTokenParsers {
     "join", "asc", "desc", "from", "on", "not", "having", "distinct",
     "case", "when", "then", "else", "end", "for", "from", "exists", "between", "like", "in",
     "year", "month", "day", "null", "is", "date", "interval", "group", "order",
-    "date", "left", "right", "outer", "inner",
+    "date", "time", "timestamp", "left", "right", "outer", "inner",
+    "d", "t", "ts",
     "update", "set",
     "insert", "into", "values"
   )
@@ -82,7 +83,7 @@ class SQLParser extends StandardTokenParsers {
   lexical.reserved ++= keywords ++ keywords.map(_.toUpperCase) ++ functions ++ functions.map(_.toUpperCase)
 
   lexical.delimiters += (
-    "*", "+", "-", "<", "=", "<>", "!=", "<=", ">=", ">", "/", "(", ")", ",", ".", ";"
+    "*", "+", "-", "<", "=", "<>", "!=", "<=", ">=", ">", "/", "(", ")", ",", ".", ";", "{", "}"
   )
 
   def select: Parser[SelectStmt] =
@@ -133,7 +134,8 @@ class SQLParser extends StandardTokenParsers {
       }
     ) | (
       set ^^ { case assigns => Set(assigns) }
-    )
+    ) |
+    failure("ins_row expected")
 
   def insert: Parser[InsertStmt] =
     "insert".ignoreCase ~> "into".ignoreCase ~> (ident  ^^ { case ident => TableRelationAST(ident, None) }) ~ ins_row <~ opt(";") ^^ {
@@ -146,7 +148,8 @@ class SQLParser extends StandardTokenParsers {
     "*" ^^ (_ => StarProj()) |
     expr ~ opt("as".ignoreCase ~> ident) ^^ {
       case expr ~ ident => ExprProj(expr, ident)
-    }
+    } |
+    failure("projection expected")
 
   def expr: Parser[SqlExpr] = or_expr
 
@@ -159,34 +162,46 @@ class SQLParser extends StandardTokenParsers {
   // TODO: this function is nasty- clean it up!
   def cmp_expr: Parser[SqlExpr] =
     add_expr ~ rep(
-      ("=" | "<>" | "!=" | "<" | "<=" | ">" | ">=") ~ add_expr ^^ {
-        case op ~ rhs => (op, rhs)
-      } |
-      "between".ignoreCase ~ add_expr ~ "and".ignoreCase ~ add_expr ^^ {
-        case op ~ a ~ _ ~ b => (op, a, b)
-      } |
-      opt("not".ignoreCase) ~ "in".ignoreCase ~ "(" ~ (select | rep1sep(expr, ",")) ~ ")" ^^ {
-        case n ~ op ~ _ ~ a ~ _ => (op, a, n.isDefined)
-      } |
-      opt("not".ignoreCase) ~ "like".ignoreCase ~ add_expr ^^ { case n ~ op ~ a => (op, a, n.isDefined) }
+      (
+        "is".ignoreCase ~ opt("not".ignoreCase) ~ "null".ignoreCase ^^ {
+          case is ~ not ~ nul => is + not.map(" " +).getOrElse("") + " " + nul
+        } |
+        ("=" | "<>" | "!=" | "<" | "<=" | ">" | ">=") ~ add_expr ^^ {
+          case op ~ rhs => (op, rhs)
+        } |
+        "between".ignoreCase ~ add_expr ~ "and".ignoreCase ~ add_expr ^^ {
+          case op ~ a ~ _ ~ b => (op, a, b)
+        } |
+        opt("not".ignoreCase) ~ "in".ignoreCase ~ "(" ~ (select | rep1sep(expr, ",")) ~ ")" ^^ {
+          case n ~ op ~ _ ~ a ~ _ => (op, a, n.isDefined)
+        } |
+        opt("not".ignoreCase) ~ "like".ignoreCase ~ add_expr ^^ { case n ~ op ~ a => (op, a, n.isDefined) }
+      )
     ) ^^ {
-      case lhs ~ elems =>
-        elems.foldLeft(lhs) {
-          case (acc, (("=", rhs: SqlExpr))) => Eq(acc, rhs)
-          case (acc, (("<>", rhs: SqlExpr))) => Neq(acc, rhs)
-          case (acc, (("!=", rhs: SqlExpr))) => Neq(acc, rhs)
-          case (acc, (("<", rhs: SqlExpr))) => Lt(acc, rhs)
-          case (acc, (("<=", rhs: SqlExpr))) => Le(acc, rhs)
-          case (acc, ((">", rhs: SqlExpr))) => Gt(acc, rhs)
-          case (acc, ((">=", rhs: SqlExpr))) => Ge(acc, rhs)
-          case (acc, (("between", l: SqlExpr, r: SqlExpr))) => And(Ge(acc, l), Le(acc, r))
-          case (acc, (("in", e: Seq[_], n: Boolean))) => In(acc, e.asInstanceOf[Seq[SqlExpr]], n)
-          case (acc, (("in", s: SelectStmt, n: Boolean))) => In(acc, Seq(Subselect(s)), n)
-          case (acc, (("like", e: SqlExpr, n: Boolean))) => Like(acc, e, n)
-        }
-    } |
+        case lhs ~ elems =>
+          elems.foldLeft(lhs) {
+            case (acc, (("=", rhs: SqlExpr))) => Eq(acc, rhs)
+            case (acc, (("<>", rhs: SqlExpr))) => Neq(acc, rhs)
+            case (acc, (("!=", rhs: SqlExpr))) => Neq(acc, rhs)
+            case (acc, (("<", rhs: SqlExpr))) => Lt(acc, rhs)
+            case (acc, (("<=", rhs: SqlExpr))) => Le(acc, rhs)
+            case (acc, ((">", rhs: SqlExpr))) => Gt(acc, rhs)
+            case (acc, ((">=", rhs: SqlExpr))) => Ge(acc, rhs)
+            case (acc, (("between", l: SqlExpr, r: SqlExpr))) => And(Ge(acc, l), Le(acc, r))
+            case (acc, (("in", e: Seq[_], n: Boolean))) => In(acc, e.asInstanceOf[Seq[SqlExpr]], n)
+            case (acc, (("in", s: SelectStmt, n: Boolean))) => In(acc, Seq(Subselect(s)), n)
+            case (acc, (("like", e: SqlExpr, n: Boolean))) => Like(acc, e, n)
+            case (acc, "is null") => IsNull(acc)
+            case (acc, "is not null") => IsNotNull(acc)
+          }
+      } |
     "not".ignoreCase ~> cmp_expr ^^ (Not(_)) |
-    "exists".ignoreCase ~> "(" ~> select <~ ")" ^^ { case s => Exists(Subselect(s)) }
+    "exists".ignoreCase ~> inParenthesis(select) ^^ { case s => Exists(Subselect(s)) } |
+    failure("cmp_expr expected")
+
+  def inParenthesis[A](inner: Parser[A]): Parser[A] =
+    "(" ~> inParenthesis(inner) <~ (")" | failure("Unmatched closing parenthesis")) |
+    inner
 
   def add_expr: Parser[SqlExpr] =
     mult_expr * (
@@ -209,7 +224,8 @@ class SQLParser extends StandardTokenParsers {
     "(" ~> (expr | select ^^ (Subselect(_))) <~ ")" |
     "+" ~> primary_expr ^^ (UnaryPlus(_)) |
     "-" ~> primary_expr ^^ (UnaryMinus(_)) |
-    case_expr
+    case_expr |
+    failure("primary_expr expected")
 
   def case_expr: Parser[SqlExpr] =
     "case".ignoreCase ~>
@@ -232,25 +248,40 @@ class SQLParser extends StandardTokenParsers {
     } |
     "substring" ~> "(" ~> ( expr ~ "from" ~ numericLit ~ opt("for" ~> numericLit) ) <~ ")" ^^ {
       case e ~ "from" ~ a ~ b => Substring(e, a.toInt, b.map(_.toInt))
-    }
+    } |
+    failure("known_function expected")
 
-  def literal: Parser[SqlExpr] =
+  override def stringLit: Parser[String] = inParenthesis(super.stringLit)
+
+  def literal: Parser[SqlExpr] = inParenthesis(
     numericLit ^^ { case i => IntLiteral(i.toInt) } |
     floatLit ^^ { case f => FloatLiteral(f.toDouble) } |
     stringLit ^^ { case s => StringLiteral(s) } |
     "null".ignoreCase ^^ (_ => NullLiteral()) |
     "date".ignoreCase ~> stringLit ^^ (DateLiteral(_)) |
+    "time".ignoreCase ~> stringLit ^^ (TimeLiteral(_)) |
+    "timestamp".ignoreCase ~> stringLit ^^ (TimestampLiteral(_)) |
     "interval".ignoreCase ~> stringLit ~ ("year" ^^^ (YEAR) | "month" ^^^ (MONTH) | "day" ^^^ (DAY)) ^^ {
       case d ~ u => IntervalLiteral(d, u)
+    } |
+    odbcDateAndTimeLiterals
+  )
+
+  def odbcDateAndTimeLiterals: Parser[SqlExpr] =
+    "{" ~> ("d" | "t" | "ts") ~ stringLit <~ "}" ^^ {
+      case "d" ~ str => ODBCDateLiteral(str)
+      case "t" ~ str => ODBCTimeLiteral(str)
+      case "ts" ~ str => ODBCTimestampLiteral(str)
     }
 
   def relations: Parser[Seq[SqlRelation]] = "from".ignoreCase ~> rep1sep(relation, ",")
 
-  def relation: Parser[SqlRelation] =
+  def relation: Parser[SqlRelation] = inParenthesis(
     simple_relation ~ rep(opt(join_type) ~ "join".ignoreCase ~ simple_relation ~ "on".ignoreCase ~ expr ^^
       { case tpe ~ _ ~ r ~ _ ~ e => (tpe.getOrElse(InnerJoin), r, e)}) ^^ {
       case r ~ elems => elems.foldLeft(r) { case (x, r) => JoinRelation(x, r._2, r._1, r._3) }
     }
+  )
 
   def join_type: Parser[JoinType] =
     ("left".ignoreCase | "right".ignoreCase) ~ opt("outer".ignoreCase) ^^ {
@@ -265,7 +296,8 @@ class SQLParser extends StandardTokenParsers {
     } |
     "(" ~ select ~ ")" ~ opt("as".ignoreCase) ~ ident ^^ {
       case _ ~ select ~ _ ~ _ ~ alias => SubqueryRelationAST(select, alias)
-    }
+    } |
+    failure("No simple_relation found")
 
   def filter: Parser[SqlExpr] = "where".ignoreCase ~> expr
 
@@ -284,10 +316,27 @@ class SQLParser extends StandardTokenParsers {
 
   private def stripQuotes(s:String) = s.substring(1, s.length-1)
 
-  def parse(sql:String): Option[Stmt] = {
-    phrase(select | insert | update)(new lexical.Scanner(sql)) match {
-      case Success(r, q) => Option(r)
-      case x => logger.warn(x.toString, new Exception); None
+  def parse(sql: String): Option[Stmt] = {
+    parseOrError(sql)
+      .right.map { stmt =>
+        Some(stmt)
+      }
+      .left.map { e =>
+        logger.warn("Parse failed", e)
+        None
+      }
+      .merge
+  }
+
+  /**
+   * Parse the given sql as the `parse` method do, but returns Either[Throwable, Stmt] instead of Option[Stmt]
+   * @param sql
+   * @return
+   */
+  def parseOrError(sql: String): Either[Throwable, Stmt] = {
+    phrase(select | insert | update | failure("no select/insert/update query found"))(new lexical.Scanner(sql)) match {
+      case Success(r, q) => Right(r)
+      case ns : NoSuccess => Left(new Exception("NoSuccess: \n" + ns))
     }
   }
 }

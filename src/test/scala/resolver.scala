@@ -14,112 +14,112 @@ class ResolverSpec extends Specification {
 
   "Resolver" should {
     "resolve query1" in {
-      val s0 = doTest(Queries.q1)
+      val s0 = doTest(QueriesSpec.q1)
       s0.ctx.projections.size must_== 10
     }
 
     "resolve query2" in {
-      val s0 = doTest(Queries.q2)
+      val s0 = doTest(QueriesSpec.q2)
       s0.ctx.projections.size must_== 8
     }
 
     "resolve query3" in {
-      val s0 = doTest(Queries.q3)
+      val s0 = doTest(QueriesSpec.q3)
       s0.ctx.projections.size must_== 4
     }
 
     "resolve query4" in {
-      val s0 = doTest(Queries.q4)
+      val s0 = doTest(QueriesSpec.q4)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query5" in {
-      val s0 = doTest(Queries.q5)
+      val s0 = doTest(QueriesSpec.q5)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query6" in {
-      val s0 = doTest(Queries.q6)
+      val s0 = doTest(QueriesSpec.q6)
       s0.ctx.projections.size must_== 1
     }
 
     "resolve query7" in {
-      val s0 = doTest(Queries.q7)
+      val s0 = doTest(QueriesSpec.q7)
       s0.ctx.projections.size must_== 4
     }
 
     "resolve query8" in {
-      val s0 = doTest(Queries.q8)
+      val s0 = doTest(QueriesSpec.q8)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query9" in {
-      val s0 = doTest(Queries.q9)
+      val s0 = doTest(QueriesSpec.q9)
       s0.ctx.projections.size must_== 3
     }
 
     "resolve query10" in {
-      val s0 = doTest(Queries.q10)
+      val s0 = doTest(QueriesSpec.q10)
       s0.ctx.projections.size must_== 8
     }
 
     "resolve query11" in {
-      val s0 = doTest(Queries.q11)
+      val s0 = doTest(QueriesSpec.q11)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query12" in {
-      val s0 = doTest(Queries.q12)
+      val s0 = doTest(QueriesSpec.q12)
       s0.ctx.projections.size must_== 3
     }
 
     "resolve query13" in {
-      val s0 = doTest(Queries.q13)
+      val s0 = doTest(QueriesSpec.q13)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query14" in {
-      val s0 = doTest(Queries.q14)
+      val s0 = doTest(QueriesSpec.q14)
       s0.ctx.projections.size must_== 1
     }
 
     "resolve query16" in {
-      val s0 = doTest(Queries.q16)
+      val s0 = doTest(QueriesSpec.q16)
       s0.ctx.projections.size must_== 4
     }
 
     "resolve query17" in {
-      val s0 = doTest(Queries.q17)
+      val s0 = doTest(QueriesSpec.q17)
       s0.ctx.projections.size must_== 1
     }
 
     "resolve query18" in {
-      val s0 = doTest(Queries.q18)
+      val s0 = doTest(QueriesSpec.q18)
       s0.ctx.projections.size must_== 6
     }
 
     "resolve query19" in {
-      val s0 = doTest(Queries.q19)
+      val s0 = doTest(QueriesSpec.q19)
       s0.ctx.projections.size must_== 1
     }
 
     "resolve query20" in {
-      val s0 = doTest(Queries.q20)
+      val s0 = doTest(QueriesSpec.q20)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query21" in {
-      val s0 = doTest(Queries.q21)
+      val s0 = doTest(QueriesSpec.q21)
       s0.ctx.projections.size must_== 2
     }
 
     "resolve query22" in {
-      val s0 = doTest(Queries.q22)
+      val s0 = doTest(QueriesSpec.q22)
       s0.ctx.projections.size must_== 3
     }
 
     "resolve query23" in {
-      val s0 = doTest(Queries.q23)
+      val s0 = doTest(QueriesSpec.q23)
       val stmt = s0.asInstanceOf[InsertStmt]
       val values = stmt.insRow.asInstanceOf[Values].values
       stmt.table.name must be equalTo ("customer")
@@ -134,7 +134,7 @@ class ResolverSpec extends Specification {
     }
 
     "resolve query24" in {
-      val s0 = doTest(Queries.q24)
+      val s0 = doTest(QueriesSpec.q24)
       val stmt = s0.asInstanceOf[InsertStmt]
       val values = stmt.insRow.asInstanceOf[NamedValues].values
       stmt.table.name must be equalTo ("customer")

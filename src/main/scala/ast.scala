@@ -211,7 +211,21 @@ sealed trait Unop extends SqlExpr {
   def gatherFields = expr.gatherFields
   def sql = Seq(opStr, "(", expr.sql, ")") mkString " "
 }
-
+sealed trait PostfixUnop extends SqlExpr {
+  val expr: SqlExpr
+  val opStr: String
+  override def isLiteral = expr.isLiteral
+  def gatherFields = expr.gatherFields
+  def sql = "(" + expr.sql + ") " + opStr
+}
+case class IsNull(expr: SqlExpr, ctx: Context = null) extends PostfixUnop {
+  val opStr = "is null"
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+}
+case class IsNotNull(expr: SqlExpr, ctx: Context = null) extends PostfixUnop {
+  val opStr = "is not null"
+  def copyWithContext(c: Context): Node = copy(ctx = c)
+}
 case class Not(expr: SqlExpr, ctx: Context = null) extends Unop {
   val opStr = "not"
   def copyWithContext(c: Context) = copy(ctx = c)
@@ -375,6 +389,26 @@ case class NullLiteral(ctx: Context = null) extends LiteralExpr {
 case class DateLiteral(d: String, ctx: Context = null) extends LiteralExpr {
   def copyWithContext(c: Context) = copy(ctx = c)
   def sql = Seq("date", "\"" + d + "\"") mkString " "
+}
+case class TimeLiteral(d: String, ctx: Context = null) extends LiteralExpr {
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def sql = Seq("time", "\"" + d + "\"") mkString " "
+}
+case class TimestampLiteral(d: String, ctx: Context = null) extends LiteralExpr {
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def sql = Seq("timestamp", "\"" + d + "\"") mkString " "
+}
+case class ODBCDateLiteral(d: String, ctx: Context = null) extends LiteralExpr {
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def sql = Seq("{d", "\"" + d + "\"}") mkString " "
+}
+case class ODBCTimeLiteral(d: String, ctx: Context = null) extends LiteralExpr {
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def sql = Seq("{t", "\"" + d + "\"}") mkString " "
+}
+case class ODBCTimestampLiteral(d: String, ctx: Context = null) extends LiteralExpr {
+  def copyWithContext(c: Context) = copy(ctx = c)
+  def sql = Seq("{ts", "\"" + d + "\"}") mkString " "
 }
 case class IntervalLiteral(e: String, unit: ExtractType, ctx: Context = null) extends LiteralExpr {
   def copyWithContext(c: Context) = copy(ctx = c)

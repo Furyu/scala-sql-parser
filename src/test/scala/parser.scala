@@ -2,7 +2,7 @@ package com.github.stephentu.scalasqlparser
 
 import org.specs2.mutable._
 
-object Queries {
+object QueriesSpec {
   val q1 = """
 select
   l_returnflag,
@@ -708,6 +708,64 @@ values
   val q25 = """
 drop table customer;
 """
+
+  val q26 = """
+select
+  `t1`.`id`,
+  `t1`.`name`,
+  `t1`.`description`,
+  `t1`.`task`,
+  `t1`.`reward_id`,
+  exists((
+    select 1 from `user_missions` `t2` where ((`t2`.`user_id`=60011) and (`t2`.`mission_id`=`t1`.`id`))
+  ))
+from
+  `missions` `t1`
+order by
+  `t1`.`id`;
+"""
+  
+  val q27 = """
+select
+  `t1`.`id`,
+  `t1`.`item_id`,
+  `t1`.`open_time`,
+  `t1`.`close_time`,
+  `t1`.`creation_time`,
+  `t1`.`update_time`
+from
+  `schedules` `t1`
+where
+  (((`t1`.`item_id`=2)
+  and (`t1`.`open_time` <= {ts '2013-02-15 08:06:43.093'}))
+  and (`t1`.`close_time` > {ts '2013-02-15 08:06:43.093'}))
+order by
+  `t1`.`id`;
+"""
+
+  val q28 = """
+select
+  count(`t1`.`id`)
+from
+  `deliveries` `t1`
+where
+  (
+    (`t1`.`sender_id`=60004)
+    and (`t1`.`recipient_id` is not null)
+    and (
+      (`t1`.`expiration_time` is null)
+      or (`t1`.`expiration_time` > {ts '2013-02-15 08:06:52.1'})
+    )
+  );
+"""
+
+  val q29 =
+    """
+select
+  ((count(({d (('2013-02-15'))}))))
+from
+  ((`test` `t`));
+    """
 }
 
 class SQLParserSpec extends Specification {
@@ -715,134 +773,158 @@ class SQLParserSpec extends Specification {
   "SQLParser" should {
     "parse query1" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q1)
+      val r = parser.parse(QueriesSpec.q1)
       r should beSome
     }
 
     "parse query2" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q2)
+      val r = parser.parse(QueriesSpec.q2)
       r should beSome
     }
 
     "parse query3" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q3) 
+      val r = parser.parse(QueriesSpec.q3)
       r should beSome
     }
 
     "parse query4" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q4)
+      val r = parser.parse(QueriesSpec.q4)
       r should beSome
     }
 
     "parse query5" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q5)
+      val r = parser.parse(QueriesSpec.q5)
       r should beSome
     }
 
     "parse query6" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q6)
+      val r = parser.parse(QueriesSpec.q6)
       r should beSome
     }
 
     "parse query7" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q7)
+      val r = parser.parse(QueriesSpec.q7)
       r should beSome
     }
 
     "parse query8" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q8)
+      val r = parser.parse(QueriesSpec.q8)
       r should beSome
     }
 
     "parse query9" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q9)
+      val r = parser.parse(QueriesSpec.q9)
       r should beSome
     }
 
     "parse query10" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q10)
+      val r = parser.parse(QueriesSpec.q10)
       r should beSome
     }
 
     "parse query11" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q11)
+      val r = parser.parse(QueriesSpec.q11)
       r should beSome
     }
 
     "parse query12" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q12)
+      val r = parser.parse(QueriesSpec.q12)
       r should beSome
     }
 
     "parse query13" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q13)
+      val r = parser.parse(QueriesSpec.q13)
       r should beSome
     }
 
     "parse query14" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q14)
+      val r = parser.parse(QueriesSpec.q14)
       r should beSome
     }
 
     "parse query16" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q16)
+      val r = parser.parse(QueriesSpec.q16)
       r should beSome
     }
 
     "parse query17" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q17)
+      val r = parser.parse(QueriesSpec.q17)
       r should beSome
     }
 
     "parse query18" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q18)
+      val r = parser.parse(QueriesSpec.q18)
       r should beSome
     }
 
     "parse query19" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q19)
+      val r = parser.parse(QueriesSpec.q19)
       r should beSome
     }
 
     "parse query20" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q20)
+      val r = parser.parse(QueriesSpec.q20)
       r should beSome
     }
 
     "parse query21" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q21)
+      val r = parser.parse(QueriesSpec.q21)
       r should beSome
     }
 
     "parse query22" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q22)
+      val r = parser.parse(QueriesSpec.q22)
       r should beSome
     }
 
     "not parse query25" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q25)
+      val r = parser.parse(QueriesSpec.q25)
       r should beNone
+    }
+
+    "parse query26" in {
+      val parser = new SQLParser
+      val r = parser.parseOrError(QueriesSpec.q26)
+      r should beRight
+    }
+
+    "parse query27" in {
+      val parser = new SQLParser
+      val r = parser.parseOrError(QueriesSpec.q27)
+      r should beRight
+    }
+
+    "parse query28" in {
+      val parser = new SQLParser
+      val r = parser.parseOrError(QueriesSpec.q28)
+      r should beRight
+    }
+
+    "parse query29" in {
+      val parser = new SQLParser
+      val r = parser.parseOrError(QueriesSpec.q29)
+      r should beRight
     }
   }
 }

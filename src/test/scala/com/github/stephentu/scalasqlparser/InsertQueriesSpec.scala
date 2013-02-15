@@ -42,7 +42,7 @@ VALUES
     }
     "parse query23" in {
       val parser = new SQLParser
-      val r = parser.parse(Queries.q23)
+      val r = parser.parse(QueriesSpec.q23)
       r should beSome
     }
   }
