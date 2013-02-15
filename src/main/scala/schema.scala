@@ -123,7 +123,7 @@ where table_schema = ?
     val tables = r.map(_.getString(1))
     s.close()
 
-    new Definitions(tables.map(name => {
+    new Definitions(Map("dual" -> Seq.empty) ++ tables.map(name => {
       val s = conn.prepareStatement("""
 select
   column_name, data_type, character_maximum_length, character_octet_length,

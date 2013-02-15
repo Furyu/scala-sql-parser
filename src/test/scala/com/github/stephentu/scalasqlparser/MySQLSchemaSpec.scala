@@ -18,6 +18,12 @@ object MySQLSchemaSpec extends Specification {
       val schema = MySQLSchema("localhost", 3306, "test", new java.util.Properties())
       success
     }
+    "provide only `dual` schema by default" in {
+      Class.forName("com.mysql.jdbc.Driver")
+      val schema = MySQLSchema("localhost", 3306, "test", new java.util.Properties())
+      schema.loadSchema().tableExists("abcdefghijklmn") must beFalse
+      schema.loadSchema().tableExists("dual") must beTrue
+    }
   }
 
 }
