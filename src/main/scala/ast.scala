@@ -370,7 +370,7 @@ sealed trait LiteralExpr extends SqlExpr {
   override def isLiteral = true
   def gatherFields = Seq.empty
 }
-case class IntLiteral(v: Long, ctx: Context = null) extends LiteralExpr {
+case class IntLiteral(v: BigInt, ctx: Context = null) extends LiteralExpr {
   def copyWithContext(c: Context) = copy(ctx = c)
   def sql = v.toString
 }

@@ -254,7 +254,7 @@ class SQLParser extends StandardTokenParsers {
   override def stringLit: Parser[String] = inParenthesis(super.stringLit)
 
   def literal: Parser[SqlExpr] = inParenthesis(
-    numericLit ^^ { case i => IntLiteral(i.toInt) } |
+    numericLit ^^ { case i => IntLiteral(BigInt(i)) } |
     floatLit ^^ { case f => FloatLiteral(f.toDouble) } |
     stringLit ^^ { case s => StringLiteral(s) } |
     "null".ignoreCase ^^ (_ => NullLiteral()) |

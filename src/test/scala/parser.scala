@@ -926,5 +926,23 @@ class SQLParserSpec extends Specification {
       val r = parser.parseOrError(QueriesSpec.q29)
       r should beRight
     }
+
+    "parse literal" in {
+      val parser = new SQLParser
+      val r = parser.literal.apply(new parser.lexical.Scanner("12345"))
+      r.get must be equalTo (IntLiteral(BigInt(12345)))
+    }
+
+    "parse ins_row" in {
+      val parser = new SQLParser
+      val r = parser.ins_row.apply(new parser.lexical.Scanner("(a) values (1)"))
+      r.get must be equalTo (
+        NamedValues(
+          Seq(
+            NamedValueBinding(IntLiteral(BigInt(1)), ColumnFieldIdent(None, "a"))
+          )
+        )
+      )
+    }
   }
 }
